@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Update GoDaddy DNS "A" Record.
+# Update GoDaddy DNS "AAAA" Record.
 #
 # usage: godaddy_ddns.py [-h] [--version] [--ip IP] [--key KEY]
 #                        [--secret SECRET] [--ttl TTL] [--force]
@@ -13,7 +13,7 @@
 # optional arguments:
 #   -h, --help       show this help message and exit
 #   --version        show program's version number and exit
-#   --ip IP          DNS Address (defaults to public WAN address from http://ipv4.icanhazip.com/)
+#   --ip IP          DNS Address (defaults to public WAN address from http://ipv6.icanhazip.com/)
 #   --key KEY        GoDaddy production key
 #   --secret SECRET  GoDaddy production secret
 #   --ttl TTL        DNS TTL.
@@ -36,8 +36,9 @@
 # Then just invoke `godaddy-ddns %godaddy-ddns.config`
 
 prog='godaddy-ddns'
-version='0.4'
+version='0.5'
 author='Carl Edman (CarlEdman@gmail.com)'
+editor='Tien Nguyen'
 
 import sys, json, argparse, socket
 
@@ -48,7 +49,7 @@ else:
   from urllib2 import urlopen, Request
   from urllib2 import URLError, HTTPError
 
-parser = argparse.ArgumentParser(description='Update GoDaddy DNS "A" Record.', fromfile_prefix_chars='%', epilog= \
+parser = argparse.ArgumentParser(description='Update GoDaddy DNS "AAAA" Record.', fromfile_prefix_chars='%', epilog= \
 '''GoDaddy customers can obtain values for the KEY and SECRET arguments by creating a production key at
 https://developer.godaddy.com/keys/.
 
@@ -60,10 +61,10 @@ parser.add_argument('--version', action='version',
   version='{} {}'.format(prog, version))
 
 parser.add_argument('hostname', type=str,
-  help='DNS fully-qualified host name with an A record.  If the hostname consists of only a domain name (i.e., it contains only one period), the record for @ is updated.')
+  help='DNS fully-qualified host name with an AAAA record.  If the hostname consists of only a domain name (i.e., it contains only one period), the record for @ is updated.')
 
 parser.add_argument('--ip', type=str, default=None,
-  help='DNS Address (defaults to public WAN address from http://ipv4.icanhazip.com/)')
+  help='DNS Address (defaults to public WAN address from http://ipv6.icanhazip.com/)')
 
 parser.add_argument('--key', type=str, default='',
   help='GoDaddy production key')
@@ -89,7 +90,7 @@ def main():
 
   if not args.ip:
     try:
-      with urlopen("https://ipv4.icanhazip.com/") as f: resp=f.read()
+      with urlopen("https://ipv6.icanhazip.com/") as f: resp=f.read()
       if sys.version_info > (3,): resp = resp.decode('utf-8')
       args.ip = resp.strip()
     except URLError:
@@ -97,13 +98,13 @@ def main():
       raise Exception(msg)
   
   ipslist = args.ip.split(",")
-  for ipsiter in ipslist:
-    ips = ipsiter.split('.')
-    if len(ips)!=4 or \
-      not ips[0].isdigit() or not ips[1].isdigit() or not ips[2].isdigit() or not ips[3].isdigit() or \
-      int(ips[0])>255 or int(ips[1])>255 or int(ips[2])>255 or int(ips[3])>255:
-      msg = '"{}" is not valid IP address.'.format(ips)
-      raise Exception(msg)
+  # for ipsiter in ipslist:
+  #   ips = ipsiter.split('.')
+  #   if len(ips)!=4 or \
+  #     not ips[0].isdigit() or not ips[1].isdigit() or not ips[2].isdigit() or not ips[3].isdigit() or \
+  #     int(ips[0])>255 or int(ips[1])>255 or int(ips[2])>255 or int(ips[3])>255:
+  #     msg = '"{}" is not valid IP address.'.format(ips)
+  #     raise Exception(msg)
 
   if not args.force and len(ipslist)==1:
     try:
@@ -114,8 +115,8 @@ def main():
     except:
       pass
              
-  url = 'https://api.godaddy.com/v1/domains/{}/records/A/{}'.format('.'.join(hostnames[1:]),hostnames[0])
-  data = json.dumps([ { "data": ip, "ttl": args.ttl, "name": hostnames[0], "type": "A" } for ip in  ipslist])
+  url = 'https://api.godaddy.com/v1/domains/{}/records/AAAA/{}'.format('.'.join(hostnames[1:]),hostnames[0])
+  data = json.dumps([ { "data": ip, "ttl": args.ttl, "name": hostnames[0], "type": "AAAA" } for ip in  ipslist])
   if sys.version_info > (3,):  data = data.encode('utf-8')
   req = Request(url, method='PUT', data=data)
 
